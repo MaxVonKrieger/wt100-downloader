@@ -1,0 +1,21 @@
+.vercel
+# Игнорируем файлы Visual Studio
+.vs/
+*.vsix
+.vscode/
+
+# Игнорируем файлы операционной системы
+.DS_Store   # macOS
+Thumbs.db   # Windows
+
+# Игнорируем папку node_modules, где хранятся зависимости
+node_modules/
+
+# Логи и временные файлы
+*.log
+*.tmp
+
+# Игнорируем файлы среды разработки и сборки
+dist/
+build/
+
