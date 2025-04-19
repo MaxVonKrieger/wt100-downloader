@@ -30,6 +30,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="api\bot.js" />
+    <Content Include="cookies.txt.txt" />
     <Content Include="package.json" />
     <Content Include="README.md" />
     <Content Include="vercel.json" />

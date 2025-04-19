@@ -60,10 +60,12 @@ async function getVideoInfo(url) {
 async function downloadMedia(url, format, outBaseName) {
     const outputTemplate = `${outBaseName}.%(ext)s`;
     const args = [
+        '--cookies', 'cookies.txt', // добавляем cookies
         url,
         '-f', format === 'mp3' ? 'bestaudio' : 'bestvideo+bestaudio',
         '-o', outputTemplate
     ];
+
     await execFileAsync(ytDlpPath, args);
 
     const files = glob.sync(`${outBaseName}.*`);
