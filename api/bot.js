@@ -7,6 +7,7 @@ const { promisify } = require('util');
 const path = require('path');
 const glob = require('glob');
 const fetch = require('node-fetch');
+const ytDlpPath = path.resolve(__dirname, 'bin', 'yt-dlp_linux');
 
 // Создание приложения Express
 const app = express();
