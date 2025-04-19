@@ -32,7 +32,13 @@ const mainMenu = {
     ],
     resize_keyboard: true
 };
-
+function normalizeYouTubeUrl(url) {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w\-]{11})/);
+    if (match) {
+        return `https://www.youtube.com/watch?v=${match[1]}`;
+    }
+    return url;
+}
 function isYouTubeUrl(url) {
     return /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(url);
 }
@@ -106,7 +112,8 @@ bot.on('text', async (ctx) => {
 
     try {
         console.log(`🔍 Получение информации о видео: ${text}`);
-        const info = await getVideoInfo(text);
+        const cleanUrl = normalizeYouTubeUrl(text);
+        const info = await getVideoInfo(cleanUrl);
         if (info.duration > 1800) {
             return ctx.reply('⚠️ Видео слишком длинное. Максимум — 30 минут.');
         }
