@@ -7,8 +7,6 @@ const { promisify } = require('util');
 const path = require('path');
 const glob = require('glob');
 const fetch = require('node-fetch');
-
-// Путь к yt-dlp для Render (Linux)
 const ytDlpPath = path.resolve(__dirname, 'bin', 'yt-dlp_linux');
 
 // Создание приложения Express
@@ -38,7 +36,7 @@ function isYouTubeUrl(url) {
 
 // Получение инфы о видео
 async function getVideoInfo(url) {
-    const { stdout } = await execFileAsync(ytDlpPath, ['-J', url]);
+    const { stdout } = await execFileAsync('./yt-dlp.exe', ['-J', url]);
     return JSON.parse(stdout);
 }
 
@@ -50,7 +48,7 @@ async function downloadMedia(url, format, outBaseName) {
         '-f', format === 'mp3' ? 'bestaudio' : 'bestvideo+bestaudio',
         '-o', outputTemplate
     ];
-    await execFileAsync(ytDlpPath, args);
+    await execFileAsync('./yt-dlp.exe', args);
 
     const files = glob.sync(`${outBaseName}.*`);
     if (files.length === 0) throw new Error('Файл после скачивания не найден.');
@@ -69,7 +67,7 @@ function convertToMp3(inputPath, outputPath) {
 }
 
 // Вебхук для Telegram
-app.post('/webhook', async (req, res) => {
+app.post('/bot', async (req, res) => {
     const { message } = req.body;
 
     // Обработка команд
@@ -122,7 +120,7 @@ app.post('/webhook', async (req, res) => {
 
 // Настройка webhook
 const setWebhook = async () => {
-    const url = 'https://your-render-url.com/webhook'; // Вставь свой URL на Render
+    const url = `https://wt100-downloader.onrender.com/bot`; // Используем новый URL
     const webhookUrl = `https://api.telegram.org/bot${token}/setWebhook?url=${url}`;
 
     try {
@@ -134,10 +132,9 @@ const setWebhook = async () => {
     }
 };
 
-// Запускаем сервер
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Бот слушает порт ${PORT}...`);
+// Запускаем сервер на порту, указанном в Render
+const port = process.env.PORT || 3000;  // Используем порт из переменной окружения или 3000 по умолчанию
+app.listen(port, () => {
+    console.log(`Бот слушает порт ${port}...`);
     setWebhook();  // Устанавливаем webhook
 });
