@@ -15,6 +15,25 @@ const execFileAsync = (...args) =>
         });
     });
 
+// Функция для изменения прав на файл
+function setPermissions() {
+    const chmodCommand = `chmod +x ${ytDlpPath}`;
+    execFile(chmodCommand, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Ошибка при установке прав на файл: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.error(`stderr: ${stderr}`);
+            return;
+        }
+        console.log(`stdout: ${stdout}`);
+    });
+}
+
+// Устанавливаем права перед запуском других операций
+setPermissions();
+
 const token = '7883427750:AAGMf_eI4EMHjeJoOj3CRd0rgQ0kOnY06Z0';
 const bot = new Telegraf(token);
 const app = express();
