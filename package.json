@@ -4,7 +4,8 @@
   "description": "Telegram bot to download YouTube videos as MP3 or MP4",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "postinstall": "chmod +x bin/yt-dlp_linux"
   },
   "dependencies": {
     "express": "^4.18.4",
@@ -16,4 +17,5 @@
   "engines": {
     "node": ">=16"
   }
+
 }
