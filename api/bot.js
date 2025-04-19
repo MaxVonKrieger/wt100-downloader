@@ -3,26 +3,25 @@ const { Telegraf } = require('telegraf');
 const { execFile } = require('child_process');
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
-const { promisify } = require('util');
 const path = require('path');
 const glob = require('glob');
 const fetch = require('node-fetch');
 
-// Промисифицированный execFile
-const execFileAsync = promisify(execFile);
-
-// Путь к yt-dlp
 const ytDlpPath = path.resolve(__dirname, 'bin', 'yt-dlp_linux');
+const execFileAsync = (...args) =>
+    new Promise((resolve, reject) => {
+        execFile(...args, (error, stdout, stderr) => {
+            if (error) return reject(error);
+            resolve({ stdout, stderr });
+        });
+    });
 
-// Создание приложения Express
-const app = express();
-app.use(express.json());
-
-// Токен бота
 const token = '7883427750:AAGMf_eI4EMHjeJoOj3CRd0rgQ0kOnY06Z0';
 const bot = new Telegraf(token);
+const app = express();
 
-// Главное меню
+app.use(express.json());
+
 const mainMenu = {
     keyboard: [
         ['?? Начать'],
@@ -32,18 +31,15 @@ const mainMenu = {
     resize_keyboard: true
 };
 
-// Проверка URL
 function isYouTubeUrl(url) {
     return /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(url);
 }
 
-// Получение инфы о видео
 async function getVideoInfo(url) {
     const { stdout } = await execFileAsync(ytDlpPath, ['-J', url]);
     return JSON.parse(stdout);
 }
 
-// Скачивание видео/аудио
 async function downloadMedia(url, format, outBaseName) {
     const outputTemplate = `${outBaseName}.%(ext)s`;
     const args = [
@@ -58,7 +54,6 @@ async function downloadMedia(url, format, outBaseName) {
     return files[0];
 }
 
-// Конвертация в MP3
 function convertToMp3(inputPath, outputPath) {
     return new Promise((resolve, reject) => {
         ffmpeg(inputPath)
@@ -69,77 +64,95 @@ function convertToMp3(inputPath, outputPath) {
     });
 }
 
-// Обработка входящих webhook-запросов от Telegram
-app.post('/bot', async (req, res) => {
-    const update = req.body;
-    console.log('?? Входящее сообщение:', JSON.stringify(update, null, 2));
+// === BOT COMMANDS ===
 
-    try {
-        await bot.handleUpdate(update);
-    } catch (err) {
-        console.error('Ошибка обработки update:', err);
-    }
-
-    res.status(200).send('OK');
+bot.start((ctx) => {
+    console.log('?? Получена команда /start');
+    ctx.reply('Привет! Отправь ссылку на YouTube ??', {
+        reply_markup: mainMenu
+    });
 });
 
-// Обработка сообщений
-bot.on('message', async (ctx) => {
+bot.hears('?? Начать', (ctx) => {
+    ctx.reply('?? Отправьте ссылку на YouTube видео:');
+});
+
+bot.hears('?? Помощь', (ctx) => {
+    ctx.reply('?? Отправьте ссылку на видео. Выберите MP3 или MP4. Я всё сделаю сам ??');
+});
+
+bot.on('text', async (ctx) => {
     const text = ctx.message.text;
-    console.log(`?? Получено сообщение: ${text}`);
+    if (!isYouTubeUrl(text)) return;
 
-    if (text === '?? Начать') {
-        return ctx.reply('?? Отправьте ссылку на YouTube видео:', {
-            reply_markup: mainMenu
-        });
-    }
-
-    if (text === '?? Помощь') {
-        return ctx.reply('?? Отправьте ссылку на видео. Выберите MP3 или MP4. Я всё сделаю сам ??');
-    }
-
-    if (isYouTubeUrl(text)) {
-        try {
-            const info = await getVideoInfo(text);
-            console.log('?? Видео-инфо:', info.title);
-            if (info.duration > 1800) {
-                return ctx.reply('?? Видео слишком длинное. Максимум — 30 минут.');
-            }
-
-            const title = info.title.substring(0, 64);
-            return ctx.reply(`?? *${title}*\nВыбери формат:`, {
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    inline_keyboard: [
-                        [{ text: '?? MP3', callback_data: `mp3_${text}` }],
-                        [{ text: '?? MP4', callback_data: `mp4_${text}` }]
-                    ]
-                }
-            });
-        } catch (err) {
-            console.error('? Ошибка получения информации о видео:', err);
-            return ctx.reply('? Не удалось получить информацию о видео.');
+    try {
+        console.log(`?? Получение информации о видео: ${text}`);
+        const info = await getVideoInfo(text);
+        if (info.duration > 1800) {
+            return ctx.reply('?? Видео слишком длинное. Максимум — 30 минут.');
         }
+
+        const title = info.title.substring(0, 64);
+        return ctx.replyWithMarkdown(`?? *${title}*\nВыбери формат:`, {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '?? MP3', callback_data: `mp3_${text}` }],
+                    [{ text: '?? MP4', callback_data: `mp4_${text}` }]
+                ]
+            }
+        });
+    } catch (err) {
+        console.error('Ошибка получения инфы:', err);
+        return ctx.reply('? Ошибка при получении информации о видео.');
     }
 });
 
-// Установка вебхука
-async function setWebhook() {
-    const url = 'https://wt100-downloader.onrender.com/bot'; // Render URL
-    const webhookUrl = `https://api.telegram.org/bot${token}/setWebhook?url=${url}`;
+bot.on('callback_query', async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    const [format, url] = data.split('_');
+    const id = ctx.callbackQuery.from.id;
+    const base = `output_${Date.now()}`;
 
     try {
-        const response = await fetch(webhookUrl);
-        const data = await response.json();
-        console.log('?? Установка webhook:', data);
-    } catch (err) {
-        console.error('? Ошибка установки webhook:', err);
-    }
-}
+        await ctx.answerCbQuery();
+        await ctx.reply(`? Загружаю в формате ${format.toUpperCase()}...`);
 
-// Запуск сервера
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`?? Сервер запущен на порту ${PORT}`);
-    setWebhook(); // Устанавливаем webhook при запуске
+        const downloaded = await downloadMedia(url, format, base);
+        let fileToSend = downloaded;
+
+        if (format === 'mp3') {
+            const mp3Path = base + '.mp3';
+            await convertToMp3(downloaded, mp3Path);
+            fs.unlinkSync(downloaded);
+            fileToSend = mp3Path;
+        }
+
+        await ctx.replyWithDocument({ source: fileToSend });
+        fs.unlinkSync(fileToSend);
+    } catch (err) {
+        console.error('Ошибка при скачивании/отправке:', err);
+        await ctx.reply('? Не удалось скачать видео.');
+    }
+});
+
+// === WEBHOOK ===
+
+app.post('/bot', (req, res) => {
+    console.log('?? Получено обновление:', JSON.stringify(req.body, null, 2));
+    bot.handleUpdate(req.body).catch((err) => console.error('Ошибка в handleUpdate:', err));
+    res.sendStatus(200);
+});
+
+app.listen(process.env.PORT || 3000, () => {
+    const port = process.env.PORT || 3000;
+    console.log(`?? Сервер запущен на порту ${port}`);
+    const webhookUrl = `https://wt100-downloader.onrender.com/bot`;
+    fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${webhookUrl}`)
+        .then(res => res.json())
+        .then(data => {
+            console.log('? Установка webhook:', data);
+        })
+        .catch(err => {
+            console.error('? Ошибка при установке webhook:', err);
+        });
 });

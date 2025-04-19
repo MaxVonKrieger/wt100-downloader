@@ -1,21 +1,19 @@
 {
   "name": "youtube-downloader-bot",
   "version": "1.0.0",
-  "description": "Telegram bot for downloading YouTube videos",
-  "main": "index.js",
+  "description": "Telegram bot to download YouTube videos as MP3 or MP4",
+  "main": "bot.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node bot.js"
   },
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.18.4",
+    "telegraf": "^4.12.3",
     "fluent-ffmpeg": "^2.1.2",
-    "glob": "^11.0.1",
-    "node-fetch": "^2.6.1",
-    "telegraf": "^4.4.0"
+    "node-fetch": "^2.6.9",
+    "glob": "^10.3.3"
   },
   "engines": {
-    "node": "14.x"
-  },
-  "author": "",
-  "license": "ISC"
+    "node": ">=16"
+  }
 }
