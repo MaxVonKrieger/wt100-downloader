@@ -6,8 +6,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const glob = require('glob');
 const fetch = require('node-fetch');
-
-const ytDlpPath = path.resolve(__dirname, 'bin', 'yt-dlp_linux');
+const ytDlpPath = 'bin/yt-dlp_linux';
 const execFileAsync = (...args) =>
     new Promise((resolve, reject) => {
         execFile(...args, (error, stdout, stderr) => {
