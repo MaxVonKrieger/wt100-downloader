@@ -1,4 +1,4 @@
-const express = require('express');
+п»їconst express = require('express');
 const { Telegraf } = require('telegraf');
 const { execFile } = require('child_process');
 const fs = require('fs');
@@ -24,9 +24,9 @@ app.use(express.json());
 
 const mainMenu = {
     keyboard: [
-        ['?? Начать'],
-        ['?? Загрузки', '? Отмена'],
-        ['?? Помощь', '?? Перезапуск']
+        ['рџљЂ РќР°С‡Р°С‚СЊ'],
+        ['рџ“Ґ Р—Р°РіСЂСѓР·РєРё', 'вќЊ РћС‚РјРµРЅР°'],
+        ['в„№пёЏ РџРѕРјРѕС‰СЊ', 'рџ”„ РџРµСЂРµР·Р°РїСѓСЃРє']
     ],
     resize_keyboard: true
 };
@@ -50,7 +50,7 @@ async function downloadMedia(url, format, outBaseName) {
     await execFileAsync(ytDlpPath, args);
 
     const files = glob.sync(`${outBaseName}.*`);
-    if (files.length === 0) throw new Error('Файл после скачивания не найден.');
+    if (files.length === 0) throw new Error('Р¤Р°Р№Р» РїРѕСЃР»Рµ СЃРєР°С‡РёРІР°РЅРёСЏ РЅРµ РЅР°Р№РґРµРЅ.');
     return files[0];
 }
 
@@ -67,18 +67,18 @@ function convertToMp3(inputPath, outputPath) {
 // === BOT COMMANDS ===
 
 bot.start((ctx) => {
-    console.log('?? Получена команда /start');
-    ctx.reply('Привет! Отправь ссылку на YouTube ??', {
+    console.log('в–¶пёЏ РџРѕР»СѓС‡РµРЅР° РєРѕРјР°РЅРґР° /start');
+    ctx.reply('РџСЂРёРІРµС‚! РћС‚РїСЂР°РІСЊ СЃСЃС‹Р»РєСѓ РЅР° YouTube рџЋ¬', {
         reply_markup: mainMenu
     });
 });
 
-bot.hears('?? Начать', (ctx) => {
-    ctx.reply('?? Отправьте ссылку на YouTube видео:');
+bot.hears('рџљЂ РќР°С‡Р°С‚СЊ', (ctx) => {
+    ctx.reply('рџ“Ћ РћС‚РїСЂР°РІСЊС‚Рµ СЃСЃС‹Р»РєСѓ РЅР° YouTube РІРёРґРµРѕ:');
 });
 
-bot.hears('?? Помощь', (ctx) => {
-    ctx.reply('?? Отправьте ссылку на видео. Выберите MP3 или MP4. Я всё сделаю сам ??');
+bot.hears('в„№пёЏ РџРѕРјРѕС‰СЊ', (ctx) => {
+    ctx.reply('рџ“Њ РћС‚РїСЂР°РІСЊС‚Рµ СЃСЃС‹Р»РєСѓ РЅР° РІРёРґРµРѕ. Р’С‹Р±РµСЂРёС‚Рµ MP3 РёР»Рё MP4. РЇ РІСЃС‘ СЃРґРµР»Р°СЋ СЃР°Рј рџ‰');
 });
 
 bot.on('text', async (ctx) => {
@@ -86,24 +86,24 @@ bot.on('text', async (ctx) => {
     if (!isYouTubeUrl(text)) return;
 
     try {
-        console.log(`?? Получение информации о видео: ${text}`);
+        console.log(`рџ”Ќ РџРѕР»СѓС‡РµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РІРёРґРµРѕ: ${text}`);
         const info = await getVideoInfo(text);
         if (info.duration > 1800) {
-            return ctx.reply('?? Видео слишком длинное. Максимум — 30 минут.');
+            return ctx.reply('вљ пёЏ Р’РёРґРµРѕ СЃР»РёС€РєРѕРј РґР»РёРЅРЅРѕРµ. РњР°РєСЃРёРјСѓРј вЂ” 30 РјРёРЅСѓС‚.');
         }
 
         const title = info.title.substring(0, 64);
-        return ctx.replyWithMarkdown(`?? *${title}*\nВыбери формат:`, {
+        return ctx.replyWithMarkdown(`рџЋ¬ *${title}*\nР’С‹Р±РµСЂРё С„РѕСЂРјР°С‚:`, {
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: '?? MP3', callback_data: `mp3_${text}` }],
-                    [{ text: '?? MP4', callback_data: `mp4_${text}` }]
+                    [{ text: 'рџЋµ MP3', callback_data: `mp3_${text}` }],
+                    [{ text: 'рџЋ¬ MP4', callback_data: `mp4_${text}` }]
                 ]
             }
         });
     } catch (err) {
-        console.error('Ошибка получения инфы:', err);
-        return ctx.reply('? Ошибка при получении информации о видео.');
+        console.error('РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёРЅС„С‹:', err);
+        return ctx.reply('вќЊ РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё РёРЅС„РѕСЂРјР°С†РёРё Рѕ РІРёРґРµРѕ.');
     }
 });
 
@@ -115,7 +115,7 @@ bot.on('callback_query', async (ctx) => {
 
     try {
         await ctx.answerCbQuery();
-        await ctx.reply(`? Загружаю в формате ${format.toUpperCase()}...`);
+        await ctx.reply(`вЏ¬ Р—Р°РіСЂСѓР¶Р°СЋ РІ С„РѕСЂРјР°С‚Рµ ${format.toUpperCase()}...`);
 
         const downloaded = await downloadMedia(url, format, base);
         let fileToSend = downloaded;
@@ -130,29 +130,29 @@ bot.on('callback_query', async (ctx) => {
         await ctx.replyWithDocument({ source: fileToSend });
         fs.unlinkSync(fileToSend);
     } catch (err) {
-        console.error('Ошибка при скачивании/отправке:', err);
-        await ctx.reply('? Не удалось скачать видео.');
+        console.error('РћС€РёР±РєР° РїСЂРё СЃРєР°С‡РёРІР°РЅРёРё/РѕС‚РїСЂР°РІРєРµ:', err);
+        await ctx.reply('вќЊ РќРµ СѓРґР°Р»РѕСЃСЊ СЃРєР°С‡Р°С‚СЊ РІРёРґРµРѕ.');
     }
 });
 
 // === WEBHOOK ===
 
 app.post('/bot', (req, res) => {
-    console.log('?? Получено обновление:', JSON.stringify(req.body, null, 2));
-    bot.handleUpdate(req.body).catch((err) => console.error('Ошибка в handleUpdate:', err));
+    console.log('рџ“© РџРѕР»СѓС‡РµРЅРѕ РѕР±РЅРѕРІР»РµРЅРёРµ:', JSON.stringify(req.body, null, 2));
+    bot.handleUpdate(req.body).catch((err) => console.error('РћС€РёР±РєР° РІ handleUpdate:', err));
     res.sendStatus(200);
 });
 
 app.listen(process.env.PORT || 3000, () => {
     const port = process.env.PORT || 3000;
-    console.log(`?? Сервер запущен на порту ${port}`);
+    console.log(`рџљЂ РЎРµСЂРІРµСЂ Р·Р°РїСѓС‰РµРЅ РЅР° РїРѕСЂС‚Сѓ ${port}`);
     const webhookUrl = `https://wt100-downloader.onrender.com/bot`;
     fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${webhookUrl}`)
         .then(res => res.json())
         .then(data => {
-            console.log('? Установка webhook:', data);
+            console.log('вњ… РЈСЃС‚Р°РЅРѕРІРєР° webhook:', data);
         })
         .catch(err => {
-            console.error('? Ошибка при установке webhook:', err);
+            console.error('вќЊ РћС€РёР±РєР° РїСЂРё СѓСЃС‚Р°РЅРѕРІРєРµ webhook:', err);
         });
 });
