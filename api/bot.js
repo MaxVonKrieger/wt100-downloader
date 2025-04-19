@@ -8,7 +8,7 @@ const glob = require('glob');
 const fetch = require('node-fetch');
 
 // Путь к yt-dlp
-const ytDlpPath = '/bin/yt-dlp_linux';
+const ytDlpPath = 'bin/yt-dlp_linux';
 const execFileAsync = (...args) =>
     new Promise((resolve, reject) => {
         execFile(...args, (error, stdout, stderr) => {
