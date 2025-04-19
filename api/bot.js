@@ -6,7 +6,9 @@ const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const glob = require('glob');
 const fetch = require('node-fetch');
-const ytDlpPath = 'bin/yt-dlp_linux';
+
+// Путь к yt-dlp
+const ytDlpPath = '/bin/yt-dlp_linux';
 const execFileAsync = (...args) =>
     new Promise((resolve, reject) => {
         execFile(...args, (error, stdout, stderr) => {
@@ -15,31 +17,13 @@ const execFileAsync = (...args) =>
         });
     });
 
-// Функция для изменения прав на файл
-function setPermissions() {
-    const chmodCommand = `chmod +x ${ytDlpPath}`;
-    execFile(chmodCommand, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Ошибка при установке прав на файл: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.error(`stderr: ${stderr}`);
-            return;
-        }
-        console.log(`stdout: ${stdout}`);
-    });
-}
-
-// Устанавливаем права перед запуском других операций
-setPermissions();
-
 const token = '7883427750:AAGMf_eI4EMHjeJoOj3CRd0rgQ0kOnY06Z0';
 const bot = new Telegraf(token);
 const app = express();
 
 app.use(express.json());
 
+// Главное меню
 const mainMenu = {
     keyboard: [
         ['🚀 Начать'],
@@ -54,6 +38,21 @@ function isYouTubeUrl(url) {
 }
 
 async function getVideoInfo(url) {
+    // Устанавливаем права на файл перед использованием
+    const chmodCommand = `chmod +x ${ytDlpPath}`;
+    execFile('sh', ['-c', chmodCommand], (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Ошибка при установке прав на файл: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.error(`stderr: ${stderr}`);
+            return;
+        }
+        console.log(`stdout: ${stdout}`);
+    });
+
+    // Получаем информацию о видео
     const { stdout } = await execFileAsync(ytDlpPath, ['-J', url]);
     return JSON.parse(stdout);
 }
