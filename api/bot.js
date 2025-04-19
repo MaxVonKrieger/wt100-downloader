@@ -7,6 +7,8 @@ const { promisify } = require('util');
 const path = require('path');
 const glob = require('glob');
 const fetch = require('node-fetch');
+
+// Путь к yt-dlp для Render (Linux)
 const ytDlpPath = path.resolve(__dirname, 'bin', 'yt-dlp_linux');
 
 // Создание приложения Express
@@ -36,7 +38,7 @@ function isYouTubeUrl(url) {
 
 // Получение инфы о видео
 async function getVideoInfo(url) {
-    const { stdout } = await execFileAsync('./yt-dlp.exe', ['-J', url]);
+    const { stdout } = await execFileAsync(ytDlpPath, ['-J', url]);
     return JSON.parse(stdout);
 }
 
@@ -48,7 +50,7 @@ async function downloadMedia(url, format, outBaseName) {
         '-f', format === 'mp3' ? 'bestaudio' : 'bestvideo+bestaudio',
         '-o', outputTemplate
     ];
-    await execFileAsync('./yt-dlp.exe', args);
+    await execFileAsync(ytDlpPath, args);
 
     const files = glob.sync(`${outBaseName}.*`);
     if (files.length === 0) throw new Error('Файл после скачивания не найден.');
@@ -133,7 +135,9 @@ const setWebhook = async () => {
 };
 
 // Запускаем сервер
-app.listen(3000, () => {
-    console.log('Бот слушает порт 3000...');
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`Бот слушает порт ${PORT}...`);
     setWebhook();  // Устанавливаем webhook
 });
