@@ -7,9 +7,9 @@ const path = require('path');
 const glob = require('glob');
 const fetch = require('node-fetch');
 
-// Путь к yt-dlp
-const ytDlpPath = path.join(__dirname, 'bin', 'yt-dlp_linux'); // Правильный путь к yt-dlp
-const cookiesPath = path.join(__dirname, 'cookies.txt'); // Путь к cookies.txt в корне проекта
+// Путь к yt-dlp (абсолютный путь относительно bot.js)
+const ytDlpPath = path.join(__dirname, 'yt-dlp_linux');  // Абсолютный путь
+const cookiesPath = path.join(__dirname, 'cookies.txt');  // Абсолютный путь
 
 const execFileAsync = (...args) =>
     new Promise((resolve, reject) => {
@@ -35,8 +35,7 @@ const mainMenu = {
     resize_keyboard: true
 };
 
-// === Вспомогательные функции ===
-
+// Вспомогательные функции
 function normalizeYouTubeUrl(url) {
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w\-]{11})/);
     if (match) {
@@ -50,22 +49,33 @@ function isYouTubeUrl(url) {
 }
 
 async function getVideoInfo(url) {
-    const cleanUrl = normalizeYouTubeUrl(url);
+    // Логирование текущей рабочей директории для отладки
+    console.log('Текущая рабочая директория:', process.cwd());
+
+    // Устанавливаем права на файл перед использованием
     const chmodCommand = `chmod +x ${ytDlpPath}`;
-    execFile('sh', ['-c', chmodCommand], (error) => {
-        if (error) console.error(`Ошибка chmod: ${error.message}`);
+    execFile('sh', ['-c', chmodCommand], (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Ошибка при установке прав на файл: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.error(`stderr: ${stderr}`);
+            return;
+        }
+        console.log(`stdout: ${stdout}`);
     });
 
-    const { stdout } = await execFileAsync(ytDlpPath, ['--cookies', cookiesPath, '-J', cleanUrl]);
+    // Получаем информацию о видео
+    const { stdout } = await execFileAsync(ytDlpPath, ['-J', url]);
     return JSON.parse(stdout);
 }
 
 async function downloadMedia(url, format, outBaseName) {
-    const cleanUrl = normalizeYouTubeUrl(url);
     const outputTemplate = `${outBaseName}.%(ext)s`;
     const args = [
-        '--cookies', cookiesPath,
-        cleanUrl,
+        '--cookies', cookiesPath, // Путь к cookies.txt
+        url,
         '-f', format === 'mp3' ? 'bestaudio' : 'bestvideo+bestaudio',
         '-o', outputTemplate
     ];
@@ -87,7 +97,7 @@ function convertToMp3(inputPath, outputPath) {
     });
 }
 
-// === Команды бота ===
+// === BOT COMMANDS ===
 
 bot.start((ctx) => {
     console.log('▶️ Получена команда /start');
@@ -112,7 +122,6 @@ bot.on('text', async (ctx) => {
         console.log(`🔍 Получение информации о видео: ${text}`);
         const cleanUrl = normalizeYouTubeUrl(text);
         const info = await getVideoInfo(cleanUrl);
-
         if (info.duration > 1800) {
             return ctx.reply('⚠️ Видео слишком длинное. Максимум — 30 минут.');
         }
@@ -121,8 +130,8 @@ bot.on('text', async (ctx) => {
         return ctx.replyWithMarkdown(`🎬 *${title}*\nВыбери формат:`, {
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: '🎵 MP3', callback_data: `mp3_${cleanUrl}` }],
-                    [{ text: '🎬 MP4', callback_data: `mp4_${cleanUrl}` }]
+                    [{ text: '🎵 MP3', callback_data: `mp3_${text}` }],
+                    [{ text: '🎬 MP4', callback_data: `mp4_${text}` }]
                 ]
             }
         });
@@ -134,8 +143,8 @@ bot.on('text', async (ctx) => {
 
 bot.on('callback_query', async (ctx) => {
     const data = ctx.callbackQuery.data;
-    const [format, rawUrl] = data.split('_');
-    const url = normalizeYouTubeUrl(rawUrl);
+    const [format, url] = data.split('_');
+    const id = ctx.callbackQuery.from.id;
     const base = `output_${Date.now()}`;
 
     try {
